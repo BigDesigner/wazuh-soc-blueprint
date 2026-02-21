@@ -1,12 +1,13 @@
 <p align="center">
-![Wazuh](https://img.shields.io/badge/Wazuh-4.x-blue)
-![SIEM](https://img.shields.io/badge/SIEM-Detection%20Engineering-red)
-![MITRE](https://img.shields.io/badge/MITRE-ATT%26CK-purple)
-![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
-![Version](https://img.shields.io/badge/Version-v1.0.0-black)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
+  <img src="https://img.shields.io/badge/Wazuh-4.x-blue" />&nbsp;
+  <img src="https://img.shields.io/badge/SIEM-Detection%20Engineering-red" />&nbsp;
+  <img src="https://img.shields.io/badge/MITRE-ATT%26CK-purple" />&nbsp;
+  <img src="https://img.shields.io/badge/Status-Production%20Ready-brightgreen" />&nbsp;
+  <img src="https://img.shields.io/badge/Version-v1.0.0-black" />&nbsp;
+  <img src="https://img.shields.io/badge/License-MIT-lightgrey" />
+</p>
 
-
+<p align="center">
   <h1 align="center">Wazuh SOC Blueprint</h1>
   <p align="center">
     Enterprise-Grade Detection Engineering Framework
