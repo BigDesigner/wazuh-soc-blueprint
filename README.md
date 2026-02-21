@@ -1,3 +1,4 @@
+<p align="center">
 ![Wazuh](https://img.shields.io/badge/Wazuh-4.x-blue)
 ![SIEM](https://img.shields.io/badge/SIEM-Detection%20Engineering-red)
 ![MITRE](https://img.shields.io/badge/MITRE-ATT%26CK-purple)
@@ -5,7 +6,7 @@
 ![Version](https://img.shields.io/badge/Version-v1.0.0-black)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-<p align="center">
+
   <h1 align="center">Wazuh SOC Blueprint</h1>
   <p align="center">
     Enterprise-Grade Detection Engineering Framework
