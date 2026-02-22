@@ -1,125 +1,181 @@
-# SOC Dashboard 2 – VPN & RDP Behavioral Monitoring
+# SOC Dashboard-2 — RDP Deep Monitoring (Production)
 
-Index Pattern: `wazuh-alerts-*`  
-Time Range (recommended): `Last 7 days`  
-Query Language: **DQL**
+**Index pattern:** `wazuh-alerts-*`  
+**Time range:** `Last 7 days`  
+**Query language:** **DQL**
+
+> Dashboard-2 purpose: RDP behavior + VPN-derived access visibility + public exposure tripwire.  
+> SSL VPN logs are not ingested; VPN detection is based on the VPN IP pool.
 
 ---
 
-# PANEL 1
-## SOC | RDP Success Top Users
+## Panel 1 — SOC | RDP | Success | Top Users
 
-### Purpose
-RDP (LogonType 10) ile başarılı oturum açan kullanıcıları gösterir.  
-Operasyonel baseline ve anormal kullanıcı yoğunluğu tespiti için kullanılır.
+**Purpose:** Identify active RDP users (baseline + anomalies).
 
-### DQL
+**DQL**
 ```dql
 data.win.system.eventID:4624
 AND data.win.eventdata.logonType:10
+AND data.win.eventdata.targetUserName:*
 AND NOT data.win.eventdata.targetUserName:*$
 ```
 
-### Visualization
-Type: **Horizontal Bar**
-
-### Metrics
+**Visualization:** Horizontal Bar  
+**Metrics**
 - Aggregation: `Count`
 - Custom Label: `Successful Logons`
 
-### Buckets
+**Buckets**
 - Aggregation: `Terms`
 - Field: `data.win.eventdata.targetUserName`
-- Order by: `Metric: Successful Logons`
+- Order by: `Count`
 - Order: `Descending`
-- Size: `10`
+- Size: `15`
 - Custom Label: `User Account`
-
-Sub Aggregation: ❌ None
 
 ---
 
-# PANEL 2
-## SOC | RDP Failed Top Source IP
+## Panel 2 — SOC | RDP | Failed | Top Source IP
 
-### Purpose
-RDP brute-force veya parola denemesi yapan kaynak IP’leri gösterir.
+**Purpose:** Detect brute-force / password guessing over RDP.
 
-### DQL
+**DQL**
 ```dql
 data.win.system.eventID:4625
-AND data.win.eventdata.logonType:10
 AND data.win.eventdata.ipAddress:*
 AND NOT data.win.eventdata.targetUserName:*$
 ```
 
-### Visualization
-Type: **Horizontal Bar**
-
-### Metrics
+**Visualization:** Horizontal Bar  
+**Metrics**
 - Aggregation: `Count`
 - Custom Label: `Failed Attempts`
 
-### Buckets
+**Buckets**
 - Aggregation: `Terms`
 - Field: `data.win.eventdata.ipAddress`
-- Order by: `Metric: Failed Attempts`
+- Order by: `Count`
 - Order: `Descending`
-- Size: `10`
+- Size: `15`
 - Custom Label: `Source IP`
-
-Sub Aggregation: ❌ None
 
 ---
 
-# PANEL 3
-## SOC | Authentication | Logon Type Distribution
+## Panel 3 — SOC | Authentication | Logon Type Distribution
 
-### Purpose
-LogonType dağılımını gösterir (Interactive, Network, RDP vs).  
-Beklenmeyen oturum tiplerini analiz etmek için kullanılır.
+**Purpose:** Single table view for RDP Success (4624+LogonType10) and Auth Fail (4625), with IPv6 hygiene.
 
-### DQL
+**DQL**
 ```dql
-data.win.system.eventID:(4624 OR 4625)
+(
+  (data.win.system.eventID:4624 AND data.win.eventdata.logonType:10)
+  OR
+  (data.win.system.eventID:4625)
+)
+AND data.win.eventdata.ipAddress:*
 AND NOT data.win.eventdata.targetUserName:*$
+AND NOT data.win.eventdata.ipAddress:("::1")
+AND NOT data.win.eventdata.ipAddress:(fe80* OR 2001*)
 ```
 
-### Visualization
-Type: **Data Table**
-
-### Metrics
+**Visualization:** Data Table  
+**Metrics**
 - Aggregation: `Count`
 - Custom Label: `Attempts`
 
-### Buckets
+**Buckets (Split rows order)**
 1) Aggregation: `Terms`
    - Field: `data.win.eventdata.ipAddress`
-   - Size: `20`
+   - Order: `Descending`
    - Custom Label: `Source IP`
 
-2) Sub Aggregation: `Terms`
+2) Aggregation: `Terms`
    - Field: `data.win.eventdata.targetUserName`
-   - Size: `20`
+   - Order: `Descending`
    - Custom Label: `Target User`
 
-3) Sub Aggregation: `Terms`
+3) Aggregation: `Terms`
    - Field: `data.win.system.eventID`
-   - Size: `5`
+   - Order: `Descending`
    - Custom Label: `Event ID`
 
 ---
 
-# PANEL 4
-## SOC | SSL VPN | Success vs Failed (Windows Auth)
+## Panel 4 — SOC | RDP | Internal | Timeline (4624/4625)
 
-### Purpose
-VPN IP havuzundan gelen Windows authentication success vs fail oranlarını gösterir.  
-VPN brute-force veya credential abuse tespiti için kullanılır.
+**Purpose:** Internal RDP activity timeline (success/fail trend).
 
-### DQL
+**DQL**
 ```dql
-data.win.system.eventID:(4624 OR 4625)
+data.win.system.eventID:4624
+```
+
+**Visualization:** Vertical Bar (Timeline)  
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Events`
+
+**Buckets**
+- X-axis:
+  - Aggregation: `Date Histogram`
+  - Field: `@timestamp`
+  - Interval: `3h`
+  - Custom Label: `Time (3h)`
+
+- Split series:
+  - Aggregation: `Terms`
+  - Field: `data.win.system.eventID`
+  - Order: `Descending`
+  - Size: `10`
+  - Custom Label: `Event ID`
+
+> Note: This panel’s DQL is intentionally kept as configured in the dashboard snapshot.  
+> If you want strict “Internal RDP” scoping, use Panel-5’s internal filter as the base and add `eventID:(4624 OR 4625)`.
+
+---
+
+## Panel 5 — SOC | RDP | Internal | IP → User → Host
+
+**Purpose:** Internal visibility drilldown: source IP → user → destination host (agent).
+
+**DQL**
+```dql
+data.win.system.eventID:4624
+```
+
+**Visualization:** Data Table  
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Count`
+
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `data.win.eventdata.ipAddress`
+   - Order: `Descending`
+   - Custom Label: `Source IP`
+
+2) Aggregation: `Terms`
+   - Field: `data.win.eventdata.targetUserName`
+   - Order: `Descending`
+   - Custom Label: `Target User`
+
+3) Aggregation: `Terms`
+   - Field: `agent.name`
+   - Order: `Descending`
+   - Custom Label: `Host`
+
+---
+
+## Panel 6 — SOC | RDP | Success | SSL VPN Users (IP → User → Host)
+
+**Purpose:** VPN pool → user mapping for RDP success (investigation view).  
+(SSL VPN logs are not ingested; identification is by VPN IP pool.)
+
+**DQL**
+```dql
+data.win.system.eventID:4624
+AND data.win.eventdata.logonType:10
 AND data.win.eventdata.ipAddress:*
 AND NOT data.win.eventdata.targetUserName:*$
 AND (
@@ -128,112 +184,34 @@ AND (
 )
 ```
 
-### Visualization
-Type: **Vertical Bar**  
-Mode: **Stacked**
-
-### Metrics
-- Aggregation: `Count`
-- Custom Label: `VPN Auth Events`
-
-### X-Axis
-- Aggregation: `Date Histogram`
-- Field: `@timestamp`
-- Interval: `5m`
-- Custom Label: `Time (5m)`
-
-### Split Series
-- Aggregation: `Terms`
-- Field: `data.win.system.eventID`
-- Size: `2`
-- Order by: `Metric: VPN Auth Events`
-- Custom Label: `EventID (4624=Success / 4625=Fail)`
-
-Sub Aggregation: ❌ None
-
----
-
-# PANEL 5
-## SOC | RDP | Success | Internal LAN Users
-
-### Purpose
-İç ağdan yapılan RDP bağlantılarını izler.  
-Normal operasyonel davranışı ayırt etmek için kullanılır.
-
-### DQL
-```dql
-data.win.system.eventID:4624
-AND data.win.eventdata.logonType:10
-AND data.win.eventdata.ipAddress:(10.38.1.* OR 172.16.16.*)
-AND NOT data.win.eventdata.targetUserName:*$
-```
-
-### Visualization
-Type: **Data Table**
-
-### Metrics
+**Visualization:** Data Table  
+**Metrics**
 - Aggregation: `Count`
 - Custom Label: `RDP Success`
 
-### Buckets
+**Buckets (Split rows order)**
 1) Aggregation: `Terms`
    - Field: `data.win.eventdata.ipAddress`
-   - Custom Label: `Source IP`
+   - Order: `Descending`
+   - Custom Label: `VPN Source IP`
 
-2) Sub Aggregation: `Terms`
+2) Aggregation: `Terms`
    - Field: `data.win.eventdata.targetUserName`
-   - Custom Label: `User`
+   - Order: `Descending`
+   - Custom Label: `Target User`
 
-3) Sub Aggregation: `Terms`
-   - Field: `agent.name`
-   - Custom Label: `Target Host`
+3) Aggregation: `Terms`
+   - Field: `data.win.eventdata.logonType`
+   - Order: `Descending`
+   - Custom Label: `Logon Type`
 
 ---
 
-# PANEL 6
-## SOC | RDP | Admin Successful Logons
+## Panel 7 — SOC | SSL VPN | Multi-Host Access Count
 
-### Purpose
-Administrator veya admin pattern içeren hesapların başarılı RDP loginlerini izler.  
-Privileged account misuse tespiti için kullanılır.
+**Purpose:** Lateral signal: same VPN IP touching multiple destination hosts (distinct `agent.name`).
 
-### DQL
-```dql
-data.win.system.eventID:4624
-AND data.win.eventdata.logonType:10
-AND NOT data.win.eventdata.targetUserName:*$
-AND (
-  data.win.eventdata.targetUserName:administrator
-  OR data.win.eventdata.targetUserName:*admin*
-)
-```
-
-### Visualization
-Type: **Data Table**
-
-### Metrics
-- Aggregation: `Count`
-- Custom Label: `Admin RDP Success`
-
-### Buckets
-1) Aggregation: `Terms`
-   - Field: `data.win.eventdata.targetUserName`
-   - Custom Label: `Admin Account`
-
-2) Sub Aggregation: `Terms`
-   - Field: `agent.name`
-   - Custom Label: `Target Host`
-
----
-
-# PANEL 7
-## SOC | SSL VPN | Multi-Host Access Count
-
-### Purpose
-Aynı VPN IP’nin kaç farklı host’a login olduğunu gösterir.  
-VPN sonrası lateral movement erken tespiti için kullanılır.
-
-### DQL
+**DQL**
 ```dql
 data.win.system.eventID:4624
 AND data.win.eventdata.ipAddress:*
@@ -244,34 +222,43 @@ AND (
 )
 ```
 
-### Visualization
-Type: **Data Table**
-
-### Metrics
+**Visualization:** Data Table  
+**Metrics**
 - Aggregation: `Unique Count`
 - Field: `agent.name`
 - Custom Label: `Distinct Target Hosts`
 
-### Buckets
+**Buckets**
 - Aggregation: `Terms`
 - Field: `data.win.eventdata.ipAddress`
-- Order by: `Metric: Distinct Target Hosts`
+- Order by: `Distinct Target Hosts`
 - Order: `Descending`
 - Size: `20`
 - Custom Label: `VPN Source IP`
 
-Sub Aggregation: ❌ None
-
 ---
 
-# Dashboard Strategy Summary
+## Panel 8 — SOC | RDP | Success | Public IP (Tripwire)
 
-Dashboard 2 focuses on:
-- RDP success/failure behavior
-- VPN authentication monitoring (via VPN IP pool)
-- Privileged usage control
-- Internal vs VPN segmentation
-- Early lateral movement detection
+**Purpose:** Tripwire for direct public-origin RDP success (should be **0** in a hardened environment).
+
+**DQL**
+```dql
+data.win.system.eventID:4624
+```
+
+**Visualization:** Horizontal Bar  
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `RDP Success`
+
+**Buckets**
+- Aggregation: `Terms`
+- Field: `data.win.eventdata.ipAddress`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `20`
+- Custom Label: `Public Source IP`
 
 ---
 
