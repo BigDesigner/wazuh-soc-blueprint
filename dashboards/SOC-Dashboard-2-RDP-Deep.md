@@ -1,58 +1,57 @@
-# SOC Dashboard-2 — RDP Deep Monitoring (Production)
+# SOC Dashboard 2 — RDP Deep (Production)
 
 **Index pattern:** `wazuh-alerts-*`  
-**Time range:** `Last 7 days`  
-**Query language:** **DQL**
-
-> Dashboard-2 purpose: RDP behavior + VPN-derived access visibility + public exposure tripwire.  
-> SSL VPN logs are not ingested; VPN detection is based on the VPN IP pool.
+**Query language:** **DQL**  
+**Goal:** RDP behavior + internal RDP visibility + VPN-derived RDP usage + public exposure tripwire.
 
 ---
 
 ## Panel 1 — SOC | RDP | Success | Top Users
 
-**Purpose:** Identify active RDP users (baseline + anomalies).
+**Purpose:** RDP (LogonType 10) successful logons by user (baseline + anomalies).
 
 **DQL**
 ```dql
-data.win.system.eventID:4624
-AND data.win.eventdata.logonType:10
-AND data.win.eventdata.targetUserName:*
-AND NOT data.win.eventdata.targetUserName:*$
+data.win.system.eventID:4624 AND
+data.win.eventdata.logonType:10 AND
+data.win.eventdata.targetUserName:* AND
+NOT data.win.eventdata.targetUserName:*$
 ```
 
 **Visualization:** Horizontal Bar  
-**Metrics**
+**Metric**
 - Aggregation: `Count`
 - Custom Label: `Successful Logons`
 
-**Buckets**
+**Bucket**
 - Aggregation: `Terms`
 - Field: `data.win.eventdata.targetUserName`
 - Order by: `Count`
 - Order: `Descending`
 - Size: `15`
-- Custom Label: `User Account`
+- Custom Label: `User`
+
+Sub Aggregation: ❌ None
 
 ---
 
 ## Panel 2 — SOC | RDP | Failed | Top Source IP
 
-**Purpose:** Detect brute-force / password guessing over RDP.
+**Purpose:** Failed logons by source IP (credential guessing visibility).
 
 **DQL**
 ```dql
-data.win.system.eventID:4625
-AND data.win.eventdata.ipAddress:*
-AND NOT data.win.eventdata.targetUserName:*$
+data.win.system.eventID:4625 AND
+data.win.eventdata.ipAddress:* AND
+NOT data.win.eventdata.targetUserName:*$
 ```
 
 **Visualization:** Horizontal Bar  
-**Metrics**
+**Metric**
 - Aggregation: `Count`
 - Custom Label: `Failed Attempts`
 
-**Buckets**
+**Bucket**
 - Aggregation: `Terms`
 - Field: `data.win.eventdata.ipAddress`
 - Order by: `Count`
@@ -60,11 +59,13 @@ AND NOT data.win.eventdata.targetUserName:*$
 - Size: `15`
 - Custom Label: `Source IP`
 
+Sub Aggregation: ❌ None
+
 ---
 
 ## Panel 3 — SOC | Authentication | Logon Type Distribution
 
-**Purpose:** Single table view for RDP Success (4624+LogonType10) and Auth Fail (4625), with IPv6 hygiene.
+**Purpose:** Combined view of RDP Success (4624+LogonType10) and Auth Fail (4625), excluding loopback/IPv6 noise.
 
 **DQL**
 ```dql
@@ -73,30 +74,33 @@ AND NOT data.win.eventdata.targetUserName:*$
   OR
   (data.win.system.eventID:4625)
 )
-AND data.win.eventdata.ipAddress:*
+AND data.win.eventdata.ipAddress:* 
 AND NOT data.win.eventdata.targetUserName:*$
 AND NOT data.win.eventdata.ipAddress:("::1")
 AND NOT data.win.eventdata.ipAddress:(fe80* OR 2001*)
 ```
 
 **Visualization:** Data Table  
-**Metrics**
+**Metric**
 - Aggregation: `Count`
 - Custom Label: `Attempts`
 
 **Buckets (Split rows order)**
 1) Aggregation: `Terms`
    - Field: `data.win.eventdata.ipAddress`
+   - Size: `20`
    - Order: `Descending`
    - Custom Label: `Source IP`
 
-2) Aggregation: `Terms`
+2) Sub Aggregation: `Terms`
    - Field: `data.win.eventdata.targetUserName`
+   - Size: `20`
    - Order: `Descending`
    - Custom Label: `Target User`
 
-3) Aggregation: `Terms`
+3) Sub Aggregation: `Terms`
    - Field: `data.win.system.eventID`
+   - Size: `10`
    - Order: `Descending`
    - Custom Label: `Event ID`
 
@@ -104,64 +108,67 @@ AND NOT data.win.eventdata.ipAddress:(fe80* OR 2001*)
 
 ## Panel 4 — SOC | RDP | Internal | Timeline (4624/4625)
 
-**Purpose:** Internal RDP activity timeline (success/fail trend).
+**Purpose:** Internal subnet RDP activity timeline (trend/baseline).
 
 **DQL**
 ```dql
-data.win.system.eventID:4624
+data.win.system.eventID:4624 AND data.win.eventdata.logonType:10 AND data.win.eventdata.ipAddress:(10.38.1.* OR 172.16.16.*) AND NOT data.win.eventdata.targetUserName:*$
 ```
 
-**Visualization:** Vertical Bar (Timeline)  
-**Metrics**
+**Visualization:** Vertical Bar  
+Mode: **Stacked**
+
+**Metric**
 - Aggregation: `Count`
-- Custom Label: `Events`
+- Custom Label: `Internal RDP Events`
 
-**Buckets**
-- X-axis:
-  - Aggregation: `Date Histogram`
-  - Field: `@timestamp`
-  - Interval: `3h`
-  - Custom Label: `Time (3h)`
+**X-Axis**
+- Aggregation: `Date Histogram`
+- Field: `@timestamp`
+- Interval: `3h`
+- Custom Label: `Time (3h)`
 
-- Split series:
-  - Aggregation: `Terms`
-  - Field: `data.win.system.eventID`
-  - Order: `Descending`
-  - Size: `10`
-  - Custom Label: `Event ID`
+**Split series**
+- Aggregation: `Terms`
+- Field: `data.win.system.eventID`
+- Size: `5`
+- Order: `Descending`
+- Custom Label: `Event ID`
 
-> Note: This panel’s DQL is intentionally kept as configured in the dashboard snapshot.  
-> If you want strict “Internal RDP” scoping, use Panel-5’s internal filter as the base and add `eventID:(4624 OR 4625)`.
+Sub Aggregation: ❌ None
 
 ---
 
 ## Panel 5 — SOC | RDP | Internal | IP → User → Host
 
-**Purpose:** Internal visibility drilldown: source IP → user → destination host (agent).
+**Purpose:** Internal subnet RDP investigation view: source IP → user → destination host.
 
 **DQL**
 ```dql
-data.win.system.eventID:4624
+data.win.system.eventID:4624 AND data.win.eventdata.logonType:10 AND data.win.eventdata.ipAddress:(10.38.1.* OR 172.16.16.*) AND NOT data.win.eventdata.targetUserName:*$
 ```
 
 **Visualization:** Data Table  
-**Metrics**
+**Metric**
 - Aggregation: `Count`
-- Custom Label: `Count`
+- Custom Label: `Internal RDP Success`
 
 **Buckets (Split rows order)**
 1) Aggregation: `Terms`
    - Field: `data.win.eventdata.ipAddress`
+   - Size: `50`
    - Order: `Descending`
    - Custom Label: `Source IP`
 
-2) Aggregation: `Terms`
+2) Sub Aggregation: `Terms`
    - Field: `data.win.eventdata.targetUserName`
+   - Size: `50`
    - Order: `Descending`
-   - Custom Label: `Target User`
+   - Custom Label: `User`
 
-3) Aggregation: `Terms`
+3) Sub Aggregation: `Terms`
    - Field: `agent.name`
+   - Size: `50`
    - Order: `Descending`
    - Custom Label: `Host`
 
@@ -169,8 +176,7 @@ data.win.system.eventID:4624
 
 ## Panel 6 — SOC | RDP | Success | SSL VPN Users (IP → User → Host)
 
-**Purpose:** VPN pool → user mapping for RDP success (investigation view).  
-(SSL VPN logs are not ingested; identification is by VPN IP pool.)
+**Purpose:** RDP success originating from SSL VPN IP pool (IPv4 pool + IPv6 prefix).
 
 **DQL**
 ```dql
@@ -185,25 +191,28 @@ AND (
 ```
 
 **Visualization:** Data Table  
-**Metrics**
+**Metric**
 - Aggregation: `Count`
 - Custom Label: `RDP Success`
 
 **Buckets (Split rows order)**
 1) Aggregation: `Terms`
    - Field: `data.win.eventdata.ipAddress`
+   - Size: `50`
    - Order: `Descending`
    - Custom Label: `VPN Source IP`
 
-2) Aggregation: `Terms`
+2) Sub Aggregation: `Terms`
    - Field: `data.win.eventdata.targetUserName`
+   - Size: `50`
    - Order: `Descending`
-   - Custom Label: `Target User`
+   - Custom Label: `User`
 
-3) Aggregation: `Terms`
-   - Field: `data.win.eventdata.logonType`
+3) Sub Aggregation: `Terms`
+   - Field: `agent.name`
+   - Size: `50`
    - Order: `Descending`
-   - Custom Label: `Logon Type`
+   - Custom Label: `Host`
 
 ---
 
@@ -223,42 +232,50 @@ AND (
 ```
 
 **Visualization:** Data Table  
-**Metrics**
+**Metric**
 - Aggregation: `Unique Count`
 - Field: `agent.name`
 - Custom Label: `Distinct Target Hosts`
 
-**Buckets**
+**Bucket**
 - Aggregation: `Terms`
 - Field: `data.win.eventdata.ipAddress`
+- Size: `20`
 - Order by: `Distinct Target Hosts`
 - Order: `Descending`
-- Size: `20`
 - Custom Label: `VPN Source IP`
+
+Sub Aggregation: ❌ None
 
 ---
 
 ## Panel 8 — SOC | RDP | Success | Public IP (Tripwire)
 
-**Purpose:** Tripwire for direct public-origin RDP success (should be **0** in a hardened environment).
+**Purpose:** Tripwire for direct public-origin RDP success (expected **0** in hardened environments).
 
 **DQL**
 ```dql
 data.win.system.eventID:4624
+AND data.win.eventdata.logonType:10
+AND data.win.eventdata.ipAddress:*
+AND NOT data.win.eventdata.targetUserName:*$
+AND NOT data.win.eventdata.ipAddress:(10.* OR 172.16.* OR 192.168.*)
+AND NOT data.win.eventdata.ipAddress:("fe80*" OR "fd*" OR "fc*" OR "2001*" OR "::1")
 ```
 
 **Visualization:** Horizontal Bar  
-**Metrics**
+**Metric**
 - Aggregation: `Count`
 - Custom Label: `RDP Success`
 
-**Buckets**
+**Bucket**
 - Aggregation: `Terms`
 - Field: `data.win.eventdata.ipAddress`
-- Order by: `Count`
-- Order: `Descending`
 - Size: `20`
+- Order: `Descending`
 - Custom Label: `Public Source IP`
+
+Sub Aggregation: ❌ None
 
 ---
 
