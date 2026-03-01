@@ -52,35 +52,44 @@ AND NOT data.win.eventdata.subjectUserName:*$
 
 ---
 
-## Panel 2 — SOC | Top | Users Receiving Admin Privileges
+# Panel 2 — SOC | Admin Group Membership Changes
 
-**Purpose:** Identify accounts granted special privileges.
+**Purpose:** Identify accounts added to privileged groups (potential privilege escalation or persistence).
 
 **DQL**
 ```dql
-data.win.system.eventID:4672
-AND data.win.eventdata.subjectUserName:*
-AND NOT data.win.eventdata.subjectUserName:*$
+data.win.system.eventID:(4728 OR 4732 OR 4756)
 ```
 
-**Visualization:** Horizontal Bar
+**Visualization:** Data Table
 
 **Metrics**
 - Aggregation: `Count`
-- Custom Label: `Privilege Assignments`
+- Custom Label: `Group Membership Changes`
 
 **Buckets**
+
+1️⃣ Split Rows  
 - Aggregation: `Terms`
-- Field: `data.win.eventdata.subjectUserName`
+- Field: `agent.name`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `10`
+- Custom Label: `Host`
+
+2️⃣ Split Rows  
+- Aggregation: `Terms`
+- Field: `data.win.eventdata.TargetUserName`
 - Order by: `Count`
 - Order: `Descending`
 - Size: `15`
-- Custom Label: `User`
+- Custom Label: `User Added`
 
 **SOC notes**
-- New or unexpected accounts → escalation attempt.
-- Service accounts → validate baseline.
-- Severity: **High** if non-admin baseline user.
+- Any addition to Administrators or Domain Admins → immediate review.
+- Unexpected user additions → possible privilege escalation.
+- Repeated group changes → persistence attempt.
+- Severity: **High**
 
 ---
 
