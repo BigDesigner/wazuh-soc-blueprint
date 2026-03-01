@@ -8,25 +8,47 @@
 
 ---
 
-## Panel 1 — SOC | KPI | Special Privileges Assigned
+# Panel 1 — SOC | Special Privileges Assigned
 
-**Purpose:** Detect Windows Event 4672 (Admin privileges assigned at logon).
+**Purpose:** Identify accounts granted special privileges per host.
 
 **DQL**
 ```dql
 data.win.system.eventID:4672
+AND data.win.eventdata.subjectUserName:*
+AND NOT data.win.eventdata.subjectUserName:*$
 ```
 
-**Visualization:** Metric
+**Visualization:** Data Table
 
 **Metrics**
 - Aggregation: `Count`
-- Custom Label: `Privileged Logons`
+- Custom Label: `Privilege Assignments (4672)`
+
+**Buckets**
+
+1️⃣ Split Rows  
+- Aggregation: `Terms`
+- Field: `agent.name`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `10`
+- Custom Label: `Host`
+
+2️⃣ Split Rows  
+- Aggregation: `Terms`
+- Field: `data.win.eventdata.subjectUserName`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `15`
+- Custom Label: `User`
 
 **SOC notes**
-- Indicates logon with administrative privileges.
-- Correlate with logon type and source IP.
-- Severity: **Medium → High** (High if unusual user).
+- High frequency on a single host → investigate.
+- New or unexpected accounts → possible escalation.
+- Sudden privilege activity outside baseline → review 4624 and 4688 correlation.
+- Severity: **High** if non-admin baseline user.
+
 
 ---
 
