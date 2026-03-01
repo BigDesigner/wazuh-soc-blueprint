@@ -93,39 +93,9 @@ data.win.system.eventID:(4728 OR 4732 OR 4756)
 
 ---
 
-## Panel 3 — SOC | Group Changes | Admin Groups Modified
+# Panel 3 — SOC | Account Creation (4720)
 
-**Purpose:** Detect group membership changes (4728, 4732, 4756).
-
-**DQL**
-```dql
-data.win.system.eventID:(4728 OR 4732 OR 4756)
-```
-
-**Visualization:** Vertical Bar
-
-**Metrics**
-- Aggregation: `Count`
-- Custom Label: `Group Modifications`
-
-**Buckets**
-- Aggregation: `Terms`
-- Field: `data.win.eventdata.targetUserName`
-- Order by: `Count`
-- Order: `Descending`
-- Size: `15`
-- Custom Label: `Affected Account`
-
-**SOC notes**
-- User added to Domain Admins or Administrators → Critical.
-- Validate change ticket.
-- Severity: **Critical** if privileged group.
-
----
-
-## Panel 4 — SOC | Account Created with Elevated Rights
-
-**Purpose:** Detect new account creation (4720) combined with privilege activity.
+**Purpose:** Detect newly created accounts which may indicate privilege escalation or persistence activity.
 
 **DQL**
 ```dql
@@ -139,63 +109,49 @@ data.win.system.eventID:4720
 - Custom Label: `Account Creations`
 
 **Buckets**
-- Split rows:
-  - Aggregation: `Terms`
-  - Field: `data.win.eventdata.targetUserName`
-  - Size: `20`
-  - Custom Label: `New Account`
+
+1️⃣ Split Rows  
+- Aggregation: `Terms`
+- Field: `agent.name`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `10`
+- Custom Label: `Host`
+
+2️⃣ Split Rows  
+- Aggregation: `Terms`
+- Field: `data.win.eventdata.targetUserName`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `20`
+- Custom Label: `New Account`
 
 **SOC notes**
-- New admin accounts are high risk.
-- Correlate with 4672 and group modifications.
-- Severity: **High → Critical**.
+- Unexpected account creation → investigate immediately.
+- Creation of admin or service accounts → high risk.
+- Correlate with:
+  - Event 4672 (Special Privileges Assigned)
+  - Events 4728/4732/4756 (Admin Group Changes)
+- Severity: **High → Critical** if linked to privileged activity.
 
 ---
 
-## Panel 5 — SOC | Privilege Escalation Timeline (5m)
+# Panel 4 — SOC | Source IP | Privilege Activity
 
-**Purpose:** Detect escalation burst patterns.
-
-**DQL**
-```dql
-data.win.system.eventID:(4672 OR 4728 OR 4732 OR 4756)
-```
-
-**Visualization:** Line Chart
-
-**Metrics**
-- Aggregation: `Count`
-- Custom Label: `Escalation Events`
-
-**Buckets**
-- X-axis:
-  - Aggregation: `Date Histogram`
-  - Field: `@timestamp`
-  - Interval: `5m`
-  - Custom Label: `Time (5m)`
-
-**SOC notes**
-- Spike pattern → automated privilege abuse.
-- Combine with authentication anomalies.
-- Severity: **High**.
-
----
-
-## Panel 6 — SOC | Source IP | Privilege Activity
-
-**Purpose:** Identify source systems triggering escalation events.
+**Purpose:** Identify source systems triggering privilege-related events.
 
 **DQL**
 ```dql
 data.win.system.eventID:(4672 OR 4728 OR 4732 OR 4756)
 AND data.win.eventdata.ipAddress:*
+AND NOT data.win.eventdata.ipAddress:("-" OR "127.0.0.1")
 ```
 
 **Visualization:** Horizontal Bar
 
 **Metrics**
 - Aggregation: `Count`
-- Custom Label: `Events`
+- Custom Label: `Privilege Events`
 
 **Buckets**
 - Aggregation: `Terms`
@@ -207,8 +163,9 @@ AND data.win.eventdata.ipAddress:*
 
 **SOC notes**
 - Internal workstation → possible compromised endpoint.
-- Domain Controller only → expected (validate).
-- Severity: **High** if unusual source.
+- Domain Controller activity → validate expected administrative activity.
+- Unusual external IP → investigate immediately.
+- Severity: **High** if source is unexpected or outside baseline.
 
 ---
 
