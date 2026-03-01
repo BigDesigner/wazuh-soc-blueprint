@@ -1,216 +1,237 @@
-# SOC Dashboard-1
-## Authentication & Correlation (Production Template)
+# SOC Dashboard-1 — Authentication & Correlation (Production Template)
 
-Index Pattern:
-wazuh-alerts-*
+**Index pattern:** `wazuh-alerts-*`
+**Time range:** `Last 24 hours` (default; override per investigation)
+**Query language:** **DQL**
 
-Time Range:
-Last 24 Hours (Default)
-Override allowed per investigation.
+> Dashboard-1 purpose: authentication failure/success baselining + fast correlation to source IP and targeted users.
 
 ---
 
-# 1) SOC | KPI | Failed Logins
+## Panel 1 — SOC | KPI | Failed Logins
 
-Visualization:
-Metric
+**Purpose:** Global authentication failure indicator.
 
-KQL:
+**DQL**
+```dql
 rule.groups:authentication_failed
+```
 
-Metric:
-Count
+**Visualization:** Metric
 
-Purpose:
-Global authentication failure indicator.
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Failed Logins`
 
-SOC Interpretation:
-- Sudden jump = brute / spray attempt
-- Correlate with Source IP panel
-
-Severity Guidance:
-Medium → High if spike detected
+**SOC notes**
+- Sudden jump → brute-force / password spray.
+- Correlate with **Panel 2** (Source IP) and **Panel 3** (Target users).
+- Severity guidance: **Medium → High** if spike detected.
 
 ---
 
-# 2) SOC | Top | Source IP (Failed Logins)
+## Panel 2 — SOC | Top | Source IP (Failed Logins)
 
-Visualization:
-Horizontal Bar
+**Purpose:** Top attacking source IP addresses (user accounts only).
 
-KQL:
+**DQL**
+```dql
 rule.groups:authentication_failed
-AND NOT data.win.eventdata.targetUserName: *$
+AND data.win.eventdata.ipAddress:*
+AND NOT data.win.eventdata.targetUserName:*$
+```
 
-Buckets:
-Y (Terms):
-data.win.eventdata.ipAddress
-Size: 15
-Order: Count Desc
+**Visualization:** Horizontal Bar
 
-Purpose:
-Top attacking IP addresses.
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Failed Attempts`
 
-SOC Interpretation:
-- Public IP → external brute force
-- Internal IP → lateral movement risk
+**Buckets**
+- Aggregation: `Terms`
+- Field: `data.win.eventdata.ipAddress`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `15`
+- Custom Label: `Source IP`
 
-Action:
-Reputation check + firewall review
-
-Severity:
-High if repeated
+**SOC notes**
+- Public IP → external brute-force.
+- Internal IP → lateral movement risk.
+- Action: reputation check + firewall review.
+- Severity: **High** if repeated.
 
 ---
 
-# 3) SOC | Top | Target Users (Failed Logins)
+## Panel 3 — SOC | Top | Target Users (Failed Logins)
 
-Visualization:
-Vertical Bar
+**Purpose:** Most targeted user accounts (exclude machine accounts).
 
-KQL:
+**DQL**
+```dql
 rule.groups:authentication_failed
-AND NOT data.win.eventdata.targetUserName: *$
+AND data.win.eventdata.targetUserName:*
+AND NOT data.win.eventdata.targetUserName:*$
+```
 
-Buckets:
-X (Terms):
-data.win.eventdata.targetUserName
-Size: 15
-Order: Count Desc
+**Visualization:** Vertical Bar
 
-Purpose:
-Most targeted accounts.
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Failed Attempts`
 
-SOC Interpretation:
-- Admin accounts targeted → escalation attempt
-- Single user heavy targeting → password spray
+**Buckets**
+- Aggregation: `Terms`
+- Field: `data.win.eventdata.targetUserName`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `15`
+- Custom Label: `Target User`
 
-Severity:
-Medium → High (admin targeted)
+**SOC notes**
+- Admin accounts targeted → privilege escalation attempt.
+- Single user heavy targeting → password guessing/spray.
+- Severity: **Medium → High** (High if privileged users).
 
 ---
 
-# 4) SOC | Spike | Failed Logins (5m)
+## Panel 4 — SOC | Spike | Failed Logins (5m)
 
-Visualization:
-Line Chart
+**Purpose:** Detect brute-force timing pattern.
 
-KQL:
+**DQL**
+```dql
 rule.groups:authentication_failed
+```
 
-Buckets:
-X (Date Histogram):
-@timestamp
-Interval: 5m
+**Visualization:** Line Chart
 
-Y:
-Count
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Events`
 
-Purpose:
-Detect brute-force timing pattern.
+**Buckets**
+- X-axis:
+  - Aggregation: `Date Histogram`
+  - Field: `@timestamp`
+  - Interval: `5m`
+  - Custom Label: `Time (5m)`
 
-Detection Logic:
-- 5 min > 50 events = probable brute wave
-
-SOC Interpretation:
-- Flat continuous = credential stuffing
-- Sharp spike = password spray burst
-
-Severity:
-High
+**SOC notes**
+- Detection logic (baseline starter): **>50 events / 5 minutes** → probable brute wave.
+- Flat continuous → credential stuffing.
+- Sharp spike → password spray burst.
+- Severity: **High**.
 
 ---
 
-# 5) SOC | Source IP Spike (5m > 15 fails)
+## Panel 5 — SOC | Source IP Spike (5m > 15 fails)
 
-Visualization:
-Bar Chart (Split by IP)
+**Purpose:** Identify concentrated attack sources (per-IP, short window).
 
-KQL:
+**DQL**
+```dql
 rule.groups:authentication_failed
+AND data.win.eventdata.ipAddress:*
+AND NOT data.win.eventdata.targetUserName:*$
+```
 
-Buckets:
-Split Series (Terms):
-data.win.eventdata.ipAddress
-Size: 10
+**Visualization:** Bar Chart (Split by IP + timeline)
 
-Sub-bucket:
-Date Histogram
-Interval: 5m
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Failed Attempts`
 
-Metric:
-Count
+**Buckets**
+- Split series:
+  - Aggregation: `Terms`
+  - Field: `data.win.eventdata.ipAddress`
+  - Order by: `Count`
+  - Order: `Descending`
+  - Size: `10`
+  - Custom Label: `Source IP`
+- X-axis:
+  - Aggregation: `Date Histogram`
+  - Field: `@timestamp`
+  - Interval: `5m`
+  - Custom Label: `Time (5m)`
 
-Operational Threshold:
-Manual review if IP > 15 failures in 5m
-
-Purpose:
-Identify concentrated attack source.
-
-Severity:
-High
-Critical if external IP + admin targeting
+**SOC notes**
+- Operational threshold: manual review if **any IP > 15 failures / 5 minutes**.
+- Severity: **High**; **Critical** if external IP + admin targeting.
 
 ---
 
-# 6) SOC | Correlation | Failed vs Success (Users)
+## Panel 6 — SOC | Correlation | Failed vs Success (Users)
 
-Visualization:
-Data Table
+**Purpose:** User-based authentication behavior correlation (failed vs success).
 
-KQL:
+**DQL**
+```dql
 rule.groups:(authentication_failed OR authentication_success)
+AND data.win.eventdata.targetUserName:*
+AND NOT data.win.eventdata.targetUserName:*$
+```
 
-Buckets:
-Split Rows (Terms):
-data.win.eventdata.targetUserName
-Size: 20
+**Visualization:** Data Table
 
-Split Rows (Terms):
-rule.groups
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Events`
 
-Metric:
-Count
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `data.win.eventdata.targetUserName`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: `20`
+   - Custom Label: `Target User`
+2) Aggregation: `Terms`
+   - Field: `rule.groups`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: `10`
+   - Custom Label: `Auth Result`
 
-Purpose:
-User-based authentication behavior correlation.
-
-SOC Interpretation:
-- Many fails + later success → possible credential compromise
-- Success only → normal behavior
-- Fail only → brute attempt
-
-Severity:
-Medium → High (fail→success pattern)
+**SOC notes**
+- Many fails + later success → possible credential compromise.
+- Success only → normal behavior.
+- Fail only → brute attempt.
+- Severity: **Medium → High** (escalate on fail→success pattern).
 
 ---
 
-# 7) SOC | Network Logons | Success (Users Only)
+## Panel 7 — SOC | Network Logons | Success (Users Only)
 
-Visualization:
-Horizontal Bar
+**Purpose:** Successful SMB/network logons (LogonType 3) for user accounts.
 
-KQL:
+**DQL**
+```dql
 rule.groups:authentication_success
 AND data.win.eventdata.logonType:3
+AND data.win.eventdata.targetUserName:*
+AND NOT data.win.eventdata.targetUserName:*$
+```
 
-Buckets:
-Y (Terms):
-data.win.eventdata.targetUserName
-Size: 15
-Order: Count Desc
+**Visualization:** Horizontal Bar
 
-Purpose:
-Successful SMB / network logons.
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Successful Logons`
 
-SOC Interpretation:
-- Sudden rise → lateral movement
-- Service accounts dominating → expected
-- User accounts spike → suspicious
+**Buckets**
+- Aggregation: `Terms`
+- Field: `data.win.eventdata.targetUserName`
+- Order by: `Count`
+- Order: `Descending`
+- Size: `15`
+- Custom Label: `User Account`
 
-Severity:
-Medium
-High if unusual workstation pivot
+**SOC notes**
+- Sudden rise → lateral movement.
+- Service accounts dominating → may be expected.
+- User accounts spiking → suspicious workstation pivot.
+- Severity: **Medium**; **High** if unusual pivot patterns.
 
 ---
 
