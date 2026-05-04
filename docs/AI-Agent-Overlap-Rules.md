@@ -247,13 +247,18 @@ AI Agent, overlap kontrolü için bu tabloyu referans almalıdır:
 | D3-P2 | Admin Group Changes | 4728/4732/4756 | — | Table | agent.name → TargetUserName |
 | D3-P3 | Account Creation | 4720 | — | Table | agent.name → targetUserName |
 | D3-P4 | Source IP Privilege | 4672/4728/4732/4756 | — | H.Bar | ipAddress |
-| D4-P1 | Scheduled Tasks | 4698 | — | Table | *(mevcut: bucket yok)* |
-| D4-P2 | Registry Run Keys | registry + Run/RunOnce | — | Table | *(mevcut: bucket yok)* |
+| D4-P1 | Scheduled Tasks | 4698 | — | Table | agent.name → taskName |
+| D4-P2 | Registry Run Keys | registry + Run/RunOnce | — | Table | agent.name → targetObject |
 | D4-P3 | SMB Logon Spike | authentication_success | 3 | Line | @timestamp (5m) |
-| D4-P4 | NTLM Logons | 4624 + NTLM | — | Table | *(mevcut: bucket yok)* |
-| D4-P5 | Service Creation | 7045 | — | Table | *(mevcut: bucket yok)* |
-| D5-P1 | Threat Intel Matches | threat_intel | — | Table | *(mevcut: bucket yok)* |
+| D4-P4 | NTLM Logons | 4624 + NTLM | — | Table | agent.name → targetUserName |
+| D4-P5 | Service Creation | 7045 | — | Table | agent.name → serviceName |
+| D5-P1 | Threat Intel Matches | threat_intel | — | Table | agent.name → rule.description |
 | D5-P2 | Suspicious Outbound | firewall | — | H.Bar | destip |
-| D5-P3 | Malware Hash | malware | — | Table | *(mevcut: bucket yok)* |
-| D5-P4 | DNS Suspicious TLD | dns | — | Table | *(mevcut: bucket yok)* |
+| D5-P3 | Malware Hash | malware | — | Table | agent.name → rule.description |
+| D5-P4 | DNS Suspicious TLD | dns | — | Table | agent.name → data.query |
 | D5-P5 | MITRE Distribution | mitre.id | — | Pie | rule.mitre.id |
+| D6-P1 | PowerShell Scripts | 4104 | — | Table | agent.name → scriptBlockText |
+| D6-P2 | Suspicious Process | 4688 / Sysmon 1 | — | Table | agent.name → image |
+| D6-P3 | LSASS Access | Sysmon 10 | — | Table | agent.name → sourceImage |
+| D6-P4 | Process Injection | Sysmon 8 / 25 | — | Table | agent.name → targetImage |
+| D6-P5 | Long Command Lines | 4688 / Sysmon 1 | — | Table | agent.name → commandLine |

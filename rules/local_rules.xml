@@ -1,0 +1,72 @@
+<group name="soc_blueprint,">
+
+  <!--
+  THREAT INTEL GROUP
+  Rules in this group are triggered by external threat intelligence matches (e.g., VirusTotal, MISP, URLHaus).
+  -->
+  <rule id="100001" level="10">
+    <field name="integration">virustotal</field>
+    <group>threat_intel,malware</group>
+    <description>VirusTotal: Positive malware detection match.</description>
+    <mitre>
+      <id>T1204.002</id>
+    </mitre>
+  </rule>
+
+  <rule id="100002" level="12">
+    <field name="integration">misp</field>
+    <group>threat_intel</group>
+    <description>MISP: IOC match found in threat intelligence feed.</description>
+  </rule>
+
+  <!--
+  DNS MONITORING GROUP
+  Rules for detecting suspicious DNS activities.
+  -->
+  <rule id="100100" level="5">
+    <if_sid>60000</if_sid>
+    <field name="win.eventdata.queryName">\.xyz$|\.top$|\.ru$|\.click$|\.gq$</field>
+    <group>dns,suspicious_tld</group>
+    <description>DNS query to a suspicious TLD ($(win.eventdata.queryName)).</description>
+    <mitre>
+      <id>T1071.004</id>
+    </mitre>
+  </rule>
+
+  <!--
+  PERSISTENCE MONITORING
+  Threshold-based rules for persistence mechanisms.
+  -->
+  <rule id="100200" level="7">
+    <if_sid>61614</if_sid> <!-- Windows: A scheduled task was created -->
+    <group>persistence,scheduled_task</group>
+    <description>Persistence: A new scheduled task has been created on $(agent.name).</description>
+    <mitre>
+      <id>T1053.005</id>
+    </mitre>
+  </rule>
+
+  <rule id="100201" level="10">
+    <if_sid>61615</if_sid> <!-- Windows: A service was installed -->
+    <group>persistence,service_creation</group>
+    <description>Persistence: A new service was installed in the system.</description>
+    <mitre>
+      <id>T1543.003</id>
+    </mitre>
+  </rule>
+
+  <!--
+  BRUTE FORCE & AUTHENTICATION SPIKES
+  Rules to alert on high volume authentication failures.
+  -->
+  <rule id="100300" level="10" frequency="50" timeframe="300">
+    <if_matched_sid>60122</if_matched_sid> <!-- Windows: Logon failure -->
+    <same_source_ip />
+    <group>authentication_failed,brute_force</group>
+    <description>Multiple Windows logon failures from the same source IP (Brute Force attack).</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+</group>

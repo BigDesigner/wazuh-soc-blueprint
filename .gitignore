@@ -1,0 +1,15 @@
+# Logs
+*.log
+ossec.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# OpenSearch/Wazuh Exports
+*.ndjson
+!dashboards/exports/*.ndjson

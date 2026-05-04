@@ -1,114 +1,208 @@
-# SOC Dashboard-5
-## Threat Intelligence & IOC Monitoring
+# SOC Dashboard-5 — Threat Intelligence & IOC Monitoring (Production Template)
 
-Index:
-wazuh-alerts-*
+**Index pattern:** `wazuh-alerts-*`  
+**Time range:** `Last 24 hours` (default; override per investigation)  
+**Query language:** **DQL**
+
+> Dashboard-5 purpose: Surface threat intelligence matches, suspicious outbound destinations, malware hash detections, DNS anomalies, and MITRE ATT&CK technique distribution.
 
 ---
 
-# 1) Threat Intel Matches (Generic)
+## Panel 1 — SOC | TI | Threat Intel Matches
 
-Visualization:
-Data Table
+**Purpose:** Surface threat intelligence hits from integrated feeds or enrichment pipelines.
 
-KQL:
+**DQL**
+```dql
 rule.groups:threat_intel
+```
 
-Columns:
-@timestamp
-agent.name
-data.srcip
-data.destip
-rule.description
-rule.level
+**Visualization:** Data Table
 
-Purpose:
-Surface TI hits from feeds/enrichment.
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Threat Intel Hits`
 
-Severity:
-High → Critical (depends on rule.level and asset criticality)
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `agent.name`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 10
+   - Custom Label: `Host`
+
+2) Sub Aggregation: `Terms`
+   - Field: `rule.description`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 20
+   - Custom Label: `Detection Rule`
+
+**Columns (display context)**
+- `@timestamp`
+- `agent.name`
+- `data.srcip`
+- `data.destip`
+- `rule.description`
+- `rule.level`
+
+**SOC notes**
+- Any hit → validate IOC freshness and asset criticality immediately.
+- Multiple hits from the same host → possible active compromise, isolate host.
+- High rule.level (≥12) → immediate escalation to Tier 2/3.
+- Severity: **High → Critical** (depends on rule.level and asset criticality)
 
 ---
 
-# 2) Suspicious Outbound Destinations (Non-RFC1918)
+## Panel 2 — SOC | TI | Suspicious Outbound Destinations (Non-RFC1918)
 
-Visualization:
-Horizontal Bar
+**Purpose:** Identify top external destination IPs to detect potential C2 beaconing or data exfiltration.
 
-KQL:
-rule.groups:firewall
-AND NOT data.destip:(10.* OR 192.168.* OR 172.16.*)
+**DQL**
+```dql
+rule.groups:firewall AND NOT data.destip:(10.* OR 192.168.* OR 172.16.*)
+```
 
-Buckets:
-Y: data.destip
-Size: 15
-Order: Count Desc
+**Visualization:** Horizontal Bar
 
-Purpose:
-Identify top external destinations.
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Outbound Connections`
+
+**Buckets**
+- Aggregation: `Terms`
+- Field: `data.destip`
+- Order by: `Count`
+- Order: `Descending`
+- Size: 15
+- Custom Label: `Destination IP`
+
+**SOC notes**
+- High-volume destination → potential C2 beaconing or large data transfer.
+- Destinations in sanctioned countries or unexpected regions → geopolitical risk.
+- Correlate destination IP with threat intel feeds for known bad actors.
+- Severity: **Medium → High** (escalate on TI match or anomalous volume)
 
 ---
 
-# 3) Malware Hash Detections (If Integrated)
+## Panel 3 — SOC | TI | Malware Hash Detections
 
-Visualization:
-Data Table
+**Purpose:** Monitor for known malware hash detections from AV, EDR, or Sysmon enrichment.
 
-KQL:
+**DQL**
+```dql
 rule.groups:malware
+```
 
-Columns:
-@timestamp
-agent.name
-file.hash
-file.path
-rule.description
+**Visualization:** Data Table
 
-Purpose:
-Hash-based detections (EDR/AV/Sysmon pipelines).
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Malware Detections`
 
-Severity:
-Critical
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `agent.name`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 10
+   - Custom Label: `Host`
+
+2) Sub Aggregation: `Terms`
+   - Field: `rule.description`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 20
+   - Custom Label: `Detection`
+
+**Columns (display context)**
+- `@timestamp`
+- `agent.name`
+- `file.hash`
+- `file.path`
+- `rule.description`
+
+**SOC notes**
+- Any detection → immediate host isolation assessment.
+- Multiple hosts with the same hash → active malware propagation in the network.
+- File in system32, temp, or download folders → high-risk execution path.
+- Severity: **Critical**
 
 ---
 
-# 4) DNS Suspicious TLD Watchlist
+## Panel 4 — SOC | TI | DNS Suspicious TLD Watchlist
 
-Visualization:
-Data Table
+**Purpose:** Detect DNS queries to suspicious top-level domains (TLDs) often used for malicious infrastructure.
 
-KQL:
-rule.groups:dns
-AND data.query:(*.xyz OR *.top OR *.ru OR *.click OR *.gq)
+**DQL**
+```dql
+rule.groups:dns AND data.query:(*.xyz OR *.top OR *.ru OR *.click OR *.gq)
+```
 
-Columns:
-@timestamp
-agent.name
-data.query
-data.srcip
+**Visualization:** Data Table
 
-Purpose:
-TLD-based hunting pivot.
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Suspicious DNS Queries`
 
-Severity:
-Medium → High (context dependent)
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `agent.name`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 10
+   - Custom Label: `Host`
+
+2) Sub Aggregation: `Terms`
+   - Field: `data.query`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 20
+   - Custom Label: `Domain`
+
+3) Sub Aggregation: `Terms`
+   - Field: `data.srcip`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 20
+   - Custom Label: `Source IP`
+
+**SOC notes**
+- Repeated queries to same suspicious domain → possible C2 callback or beaconing.
+- High query volume from a single host → DNS tunneling indicator.
+- New domain not in the organization's baseline → investigative pivot point.
+- Severity: **Medium → High** (context dependent)
 
 ---
 
-# 5) MITRE ATT&CK Technique Distribution
+## Panel 5 — SOC | TI | MITRE ATT&CK Technique Distribution
 
-Visualization:
-Pie
+**Purpose:** Overview of detected MITRE ATT&CK techniques for reporting and coverage analysis.
 
-KQL:
+**DQL**
+```dql
 rule.mitre.id:*
+```
 
-Bucket:
-rule.mitre.id
-Size: 15
+**Visualization:** Pie
 
-Purpose:
-Technique distribution overview for reporting.
+**Metrics**
+- Aggregation: `Count`
+- Custom Label: `Technique Hits`
+
+**Buckets**
+- Aggregation: `Terms`
+- Field: `rule.mitre.id`
+- Order by: `Count`
+- Order: `Descending`
+- Size: 15
+- Custom Label: `MITRE Technique`
+
+**SOC notes**
+- Dominant technique → indicates the active phase of an ongoing attack.
+- Unexpected technique appearance → new threat vector being exploited.
+- Use for weekly/monthly SOC reporting and detection coverage gap analysis.
+- Severity: **Low** (informational / reporting)
 
 ---
 

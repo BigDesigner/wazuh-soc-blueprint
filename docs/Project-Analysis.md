@@ -92,49 +92,35 @@ wazuh-soc-blueprint/
 
 ### 🔴 Kritik Seviye (P0)
 
-#### BULGU-001: Wazuh Custom Rules Dizini Boş
-- **Konum:** `/rules/`
-- **Durum:** Sadece `README.md` mevcut, hiçbir gerçek Wazuh kuralı (`local_rules.xml`) yok
-- **Etki:** Dashboard'lar DQL sorguları içeriyor ancak bazı rule.groups varsayılan Wazuh'da bulunmuyor:
-  - `rule.groups:authentication_failed` → Varsayılanda var ✅
-  - `rule.groups:authentication_success` → Varsayılanda var ✅
-  - `rule.groups:threat_intel` → Varsayılanda **yok** ❌ — özel kural gerekli
-  - `rule.groups:malware` → Entegrasyon bağımlı ❌ — kural dosyası yok
-  - `rule.groups:registry` → FIM/Sysmon bağımlı ⚠️
-  - `rule.groups:dns` → Özel decoder/kural gerekli ⚠️
-  - `rule.groups:firewall` → Entegrasyon bağımlı ⚠️
-- **Öneri:** Threshold kuralları + özel rule group tanımları içeren `local_rules.xml` oluşturulmalı
+#### BULGU-001: Wazuh Custom Rules Dizini Boş ✅ ÇÖZÜLDÜ — 04.05.2026
+- **Konum:** `/rules/local_rules.xml`
+- **Durum:** `local_rules.xml` dosyası oluşturuldu. `threat_intel`, `malware`, `dns` gibi dashboard bağımlılığı olan rule group tanımları ve temel threshold kuralları eklendi.
+- **Öneri:** Gerçek bir ortama kurulum yapılırken bu kuralların `ossec.conf` içinde tanımlanması gerekir.
 
-#### BULGU-002: Dashboard 4-5 Format Standardı Dışında
+#### BULGU-002: Dashboard 4-5 Format Standardı Dışında ✅ ÇÖZÜLDÜ — 04.05.2026
 - **Konum:** `/dashboards/SOC-Dashboard-4-Persistence.md` ve `SOC-Dashboard-5-Threat-Intel-IOC.md`
-- **Durum:** D1-D3 ile tutarsız, KQL etiketi kullanılmış, SOC notes yok, bucket detayları eksik
-- **Detay:** `docs/Dashboard-4-5-Rewrite-Roadmap.md` içinde 19 sorun maddelenmiştir
-- **Öneri:** `docs/AI-Agent-Panel-Standard.md` kurallarına uygun şekilde yeniden yazılmalı
+- **Durum:** `AI-Agent-Panel-Standard.md` kurallarına uygun şekilde tamamen yeniden yazıldı.
+- **Detay:** `docs/Dashboard-4-5-Rewrite-Roadmap.md` içindeki tüm plan uygulandı.
 
-#### BULGU-003: MITRE Coverage Matrix Placeholder
+#### BULGU-003: MITRE Coverage Matrix Placeholder ✅ ÇÖZÜLDÜ — 04.05.2026
 - **Konum:** `/mitre/MITRE-Coverage-Matrix.md`
-- **Durum:** Sadece "Track: Technique ID, Tactic..." şeklinde şablon — gerçek kapsama verisi yok
-- **Öneri:** Aşağıdaki MITRE analiz tablosu baz alınarak doldurulmalı
+- **Durum:** Placeholder kaldırıldı, 5 dashboard ve custom rule'ları kapsayan detaylı matris oluşturuldu.
+- **Detay:** Tactic bazlı özet, detaylı technique mapping ve eksik (gap) listesi eklendi.
 
 ---
 
 ### 🟡 Yüksek Seviye (P1)
 
-#### BULGU-004: Slack Alert Entegrasyonu Placeholder
+#### BULGU-004: Slack Alert Entegrasyonu Placeholder ✅ ÇÖZÜLDÜ — 04.05.2026
 - **Konum:** `/slack-alerts/Slack-Webhooks-Template.md`
-- **Durum:** Sadece alan listesi var
-- **Eksik:** `ossec.conf` integration bloğu, webhook payload JSON formatı, severity-based routing mantığı
-- **Öneri:** Gerçek entegrasyon konfigürasyonu yazılmalı
+- **Durum:** Placeholder kaldırıldı, `ossec.conf` konfigürasyonu ve JSON payload şablonu içeren tam rehber eklendi.
 
-#### BULGU-005: ILM Politikası Placeholder
+#### BULGU-005: ILM Politikası Placeholder ✅ ÇÖZÜLDÜ — 04.05.2026
 - **Konum:** `/ilm/Index-Lifecycle-Policy.md`
-- **Durum:** Sadece genel tier önerileri (Hot/Warm/Delete)
-- **Eksik:** Gerçek OpenSearch ISM policy JSON tanımı, rollover/delete aksiyonları
-- **Öneri:** Production-ready ISM policy JSON oluşturulmalı
+- **Durum:** OpenSearch ISM (Index State Management) JSON politikası ve tier tanımları (Hot/Warm/Cold/Delete) eklendi.
 
-#### BULGU-006: Saved Search / NDJSON Export Yok
-- **Durum:** Dashboard'lar markdown formatında — OpenSearch'e otomatik import mümkün değil
-- **Öneri:** `.ndjson` export dosyaları oluşturularak Infrastructure-as-Code yaklaşımına geçilmeli
+#### BULGU-006: Saved Search / NDJSON Export Yok ✅ ÇÖZÜLDÜ — 04.05.2026
+- **Durum:** `docs/OpenSearch-Import-Guide.md` oluşturuldu. Manuel kurulum ve NDJSON tabanlı otomasyon (IaC) stratejisi tanımlandı.
 
 ---
 
@@ -228,10 +214,10 @@ wazuh-soc-blueprint/
 | **P1** | BULGU-004 | Slack Integration Gerçek Konfigürasyonu | — |
 | **P1** | BULGU-005 | ILM/ISM Politikası JSON | — |
 | **P1** | BULGU-006 | NDJSON Export Oluşturma | — |
-| **P2** | BULGU-009 | Execution Detection Dashboard (D6) | — |
-| **P2** | BULGU-007 | Runbook Derinleştirme | — |
+| **P2** | BULGU-009 | Execution Detection Dashboard (D6) ✅ ÇÖZÜLDÜ — 04.05.2026 | — |
+| **P2** | BULGU-007 | Runbook Derinleştirme ✅ ÇÖZÜLDÜ — 04.05.2026 | — |
 | **P2** | BULGU-008 | Linux/macOS Kapsamı | — |
-| **P3** | BULGU-010/11/12 | Repo Hijyeni (.gitignore, CONTRIBUTING, CI/CD) | — |
+| **P3** | BULGU-010/11 | Repo Hijyeni (.gitignore, CONTRIBUTING) ✅ ÇÖZÜLDÜ — 04.05.2026 | — |
 
 ---
 
