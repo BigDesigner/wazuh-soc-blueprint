@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.1.0",
+  "session_id": "c91a2c71-d38e-4386-bbb6-a8677d7c93e5",
+  "status": "ACTIVE",
+  "mode": "Interactive",
+  "preferred_language": "tr",
+  "timestamp": "2026-10-09T12:19:15+03:00",
+  "active_branch": "main",
+  "last_commit": "1605b0ba63266465a5306fce3da86b93ec448ba5",
+  "git_history_available": true,
+  "worktree_status": "clean",
+  "current_sprint": {
+    "sprint_id": "v1.0.0-soc-standardization",
+    "active_tasks": [
+      "TASK-001: Synchronize README.md with Dashboard 6",
+      "TASK-002: Implement MITRE gaps (T1486 & T1070) in local_rules.xml"
+    ]
+  },
+  "tracked_memory_areas": {
+    "adr": ".memory-bank/adr/",
+    "changelog": ".memory-bank/changelog/",
+    "audits": ".memory-bank/audits/",
+    "bugs": ".memory-bank/bugs/",
+    "tasks": ".tasks/",
+    "specs": ".specs/",
+    "agents": ".agents/"
+  }
+}
