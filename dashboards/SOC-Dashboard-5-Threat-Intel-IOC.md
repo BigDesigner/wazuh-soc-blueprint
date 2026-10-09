@@ -118,9 +118,10 @@ rule.groups:malware
 **Columns (display context)**
 - `@timestamp`
 - `agent.name`
-- `file.hash`
-- `file.path`
+- `data.virustotal.sha1` (or `syscheck.sha256`)
+- `syscheck.path`
 - `rule.description`
+- `rule.level`
 
 **SOC notes**
 - Any detection → immediate host isolation assessment.
@@ -136,7 +137,11 @@ rule.groups:malware
 
 **DQL**
 ```dql
-rule.groups:dns AND data.query:(*.xyz OR *.top OR *.ru OR *.click OR *.gq)
+rule.groups:dns
+AND (
+  data.query:(*.xyz OR *.top OR *.ru OR *.click OR *.gq)
+  OR data.win.eventdata.queryName:(*.xyz OR *.top OR *.ru OR *.click OR *.gq)
+)
 ```
 
 **Visualization:** Data Table
@@ -154,7 +159,7 @@ rule.groups:dns AND data.query:(*.xyz OR *.top OR *.ru OR *.click OR *.gq)
    - Custom Label: `Host`
 
 2) Sub Aggregation: `Terms`
-   - Field: `data.query`
+   - Field: `data.win.eventdata.queryName`
    - Order by: `Count`
    - Order: `Descending`
    - Size: 20
@@ -171,6 +176,7 @@ rule.groups:dns AND data.query:(*.xyz OR *.top OR *.ru OR *.click OR *.gq)
 - Repeated queries to same suspicious domain → possible C2 callback or beaconing.
 - High query volume from a single host → DNS tunneling indicator.
 - New domain not in the organization's baseline → investigative pivot point.
+- Supports both Wazuh network log decoders (data.query) and Sysmon Event ID 22 (queryName).
 - Severity: **Medium → High** (context dependent)
 
 ---

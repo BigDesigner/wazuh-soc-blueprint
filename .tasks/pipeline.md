@@ -8,7 +8,8 @@
 
 ## 🚀 Immediate Next Actions (Sprint Backlog)
 
-- [ ] **TASK-001**: Synchronize `README.md` to include Dashboard-6 (Execution & Process Monitoring) in file structure, dashboard overview, and Event ID tables.
+- [x] **TASK-000**: Remediate all defects, DQL errors, and missing SOC notes across Dashboards 1–6 per audit `7583260`.
+- [x] **TASK-001**: Synchronize `README.md` to include Dashboard-6 (Execution & Process Monitoring) in file structure, dashboard overview, and Event ID tables.
 - [ ] **TASK-002**: Address high-priority MITRE gaps in `rules/local_rules.xml`:
   - `T1486`: Add FIM/vssadmin shadow copy deletion alert.
   - `T1070`: Add Windows Event log clearing alert (Event ID 1102 / 104).

@@ -2,6 +2,17 @@
 
 ## Completed Milestones
 
+### 2026-10-09 — SOC Dashboards Deep Audit & Comprehensive Remediation
+- Remediated all critical, major, and standard violations identified in audit `7583260`.
+- Fixed D6-P5 illegal `.length > 500` DQL syntax to valid OpenSearch wildcard matching.
+- Re-architected D3-P4 from nonexistent `ipAddress` to Host & Subject Actor breakdown.
+- Resolved D2-P4 scope mismatch, including both 4624 (LogonType 10) and 4625.
+- Overhauled Dashboard 2 with complete SOC notes and severities across all 8 panels; added `logonType:10` to P2 to eliminate duplicate with D1-P2.
+- Standardized Dashboard 3 headers from H1 to H2, normalized bucket formats and field casing.
+- Added dual schema support to D6-P2 (Windows 4688 and Sysmon Event 1).
+- Corrected ECS field drift in D5 (P3 and P4) to native Wazuh schema.
+- Synchronized `README.md` and `.specs/boundary-conditions.md`.
+
 ### 2026-10-09 — Sentinel Memory Bank Initialization & Spec Migration
 - Initialized Sentinel Agent Memory Bank directory structure (`.memory-bank/`, `.specs/`, `.agents/`, `.tasks/`).
 - Losslessly migrated standards, overlap rules, import guides, and project analysis into `.specs/constitution.md`, `.specs/boundary-conditions.md`, `.specs/bootstrap.md`, and ADRs.

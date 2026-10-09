@@ -1,16 +1,16 @@
 # SOC Dashboard-3 — Privilege Escalation & Admin Abuse (Production Template)
 
 **Index pattern:** `wazuh-alerts-*`  
-**Time range:** `Last 24 hours` (default; expand during investigation)  
+**Time range:** `Last 24 hours` (default; override per investigation)  
 **Query language:** **DQL**
 
-> Dashboard-3 purpose: Detect privilege escalation, admin abuse, special privilege assignments, and group membership changes.
+> Dashboard-3 purpose: Detect privilege escalation, administrative abuse, special privilege assignments, and privileged group membership tampering.
 
 ---
 
-# Panel 1 — SOC | Special Privileges Assigned
+## Panel 1 — SOC | Privilege | Special Privileges Assigned (4672)
 
-**Purpose:** Identify accounts granted special privileges per host.
+**Purpose:** Identify accounts granted sensitive administrative privileges per host.
 
 **DQL**
 ```dql
@@ -23,38 +23,34 @@ AND NOT data.win.eventdata.subjectUserName:*$
 
 **Metrics**
 - Aggregation: `Count`
-- Custom Label: `Privilege Assignments (4672)`
+- Custom Label: `Privilege Assignments`
 
-**Buckets**
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `agent.name`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 10
+   - Custom Label: `Host`
 
-1️⃣ Split Rows  
-- Aggregation: `Terms`
-- Field: `agent.name`
-- Order by: `Count`
-- Order: `Descending`
-- Size: `10`
-- Custom Label: `Host`
-
-2️⃣ Split Rows  
-- Aggregation: `Terms`
-- Field: `data.win.eventdata.subjectUserName`
-- Order by: `Count`
-- Order: `Descending`
-- Size: `15`
-- Custom Label: `User`
+2) Sub Aggregation: `Terms`
+   - Field: `data.win.eventdata.subjectUserName`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 15
+   - Custom Label: `User`
 
 **SOC notes**
-- High frequency on a single host → investigate.
-- New or unexpected accounts → possible escalation.
-- Sudden privilege activity outside baseline → review 4624 and 4688 correlation.
-- Severity: **High** if non-admin baseline user.
-
+- High frequency of 4672 on non-DC endpoints → investigate for local privilege escalation.
+- New or unexpected accounts acquiring SeDebugPrivilege / SeTcbPrivilege → potential exploitation.
+- Sudden privilege activity outside normal working hours → correlate with 4624 (Logon) and 4688 (Process Creation).
+- Severity: **High** if observed on non-admin baseline user accounts.
 
 ---
 
-# Panel 2 — SOC | Admin Group Membership Changes
+## Panel 2 — SOC | Privilege | Admin Group Changes (4728/4732/4756)
 
-**Purpose:** Identify accounts added to privileged groups (potential privilege escalation or persistence).
+**Purpose:** Identify accounts added to privileged security groups (Domain Admins, Administrators).
 
 **DQL**
 ```dql
@@ -67,35 +63,32 @@ data.win.system.eventID:(4728 OR 4732 OR 4756)
 - Aggregation: `Count`
 - Custom Label: `Group Membership Changes`
 
-**Buckets**
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `agent.name`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 10
+   - Custom Label: `Host`
 
-1️⃣ Split Rows  
-- Aggregation: `Terms`
-- Field: `agent.name`
-- Order by: `Count`
-- Order: `Descending`
-- Size: `10`
-- Custom Label: `Host`
-
-2️⃣ Split Rows  
-- Aggregation: `Terms`
-- Field: `data.win.eventdata.TargetUserName`
-- Order by: `Count`
-- Order: `Descending`
-- Size: `15`
-- Custom Label: `User Added`
+2) Sub Aggregation: `Terms`
+   - Field: `data.win.eventdata.targetUserName`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 15
+   - Custom Label: `User Added`
 
 **SOC notes**
-- Any addition to Administrators or Domain Admins → immediate review.
-- Unexpected user additions → possible privilege escalation.
-- Repeated group changes → persistence attempt.
-- Severity: **High**
+- Any addition to Domain Admins or Enterprise Admins → immediate escalation and verification with change management.
+- User added to local Administrators on endpoints → possible local persistence.
+- Repeated membership modifications → potential adversary staging elevated access.
+- Severity: **Critical** (High for local groups, Critical for domain groups).
 
 ---
 
-# Panel 3 — SOC | Account Creation (4720)
+## Panel 3 — SOC | Privilege | Account Creation (4720)
 
-**Purpose:** Detect newly created accounts which may indicate privilege escalation or persistence activity.
+**Purpose:** Detect newly created accounts which may indicate persistence or unauthorized staging.
 
 **DQL**
 ```dql
@@ -108,64 +101,75 @@ data.win.system.eventID:4720
 - Aggregation: `Count`
 - Custom Label: `Account Creations`
 
-**Buckets**
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `agent.name`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 10
+   - Custom Label: `Host`
 
-1️⃣ Split Rows  
-- Aggregation: `Terms`
-- Field: `agent.name`
-- Order by: `Count`
-- Order: `Descending`
-- Size: `10`
-- Custom Label: `Host`
-
-2️⃣ Split Rows  
-- Aggregation: `Terms`
-- Field: `data.win.eventdata.targetUserName`
-- Order by: `Count`
-- Order: `Descending`
-- Size: `20`
-- Custom Label: `New Account`
+2) Sub Aggregation: `Terms`
+   - Field: `data.win.eventdata.targetUserName`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 20
+   - Custom Label: `New Account`
 
 **SOC notes**
-- Unexpected account creation → investigate immediately.
-- Creation of admin or service accounts → high risk.
+- Unapproved account creation → isolate and verify provisioning ticket.
+- Creation of generic naming accounts (e.g. `support`, `tempadmin`) → attacker evasion tactic.
 - Correlate with:
   - Event 4672 (Special Privileges Assigned)
-  - Events 4728/4732/4756 (Admin Group Changes)
-- Severity: **High → Critical** if linked to privileged activity.
+  - Events 4728/4732/4756 (Immediate addition to administrative groups)
+- Severity: **High → Critical** if account created by non-standard administrator.
 
 ---
 
-# Panel 4 — SOC | Source IP | Privilege Activity
+## Panel 4 — SOC | Privilege | Host & Subject Breakdown (4672/4728/4732/4756)
 
-**Purpose:** Identify source systems triggering privilege-related events.
+**Purpose:** Correlate privilege assignment and group changes across endpoints and executing subject users.
 
 **DQL**
 ```dql
 data.win.system.eventID:(4672 OR 4728 OR 4732 OR 4756)
-AND data.win.eventdata.ipAddress:*
-AND NOT data.win.eventdata.ipAddress:("-" OR "127.0.0.1")
+AND data.win.eventdata.subjectUserName:*
+AND NOT data.win.eventdata.subjectUserName:*$
 ```
 
-**Visualization:** Horizontal Bar
+**Visualization:** Data Table
 
 **Metrics**
 - Aggregation: `Count`
 - Custom Label: `Privilege Events`
 
-**Buckets**
-- Aggregation: `Terms`
-- Field: `data.win.eventdata.ipAddress`
-- Order by: `Count`
-- Order: `Descending`
-- Size: `15`
-- Custom Label: `Source IP`
+**Buckets (Split rows order)**
+1) Aggregation: `Terms`
+   - Field: `agent.name`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 15
+   - Custom Label: `Host`
+
+2) Sub Aggregation: `Terms`
+   - Field: `data.win.eventdata.subjectUserName`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 15
+   - Custom Label: `Executing User (Subject)`
+
+3) Sub Aggregation: `Terms`
+   - Field: `data.win.system.eventID`
+   - Order by: `Count`
+   - Order: `Descending`
+   - Size: 5
+   - Custom Label: `Event ID`
 
 **SOC notes**
-- Internal workstation → possible compromised endpoint.
-- Domain Controller activity → validate expected administrative activity.
-- Unusual external IP → investigate immediately.
-- Severity: **High** if source is unexpected or outside baseline.
+- Windows Security events 4672 and 4728/4732 do not generate a native ipAddress field.
+- To trace network origin, correlate `data.win.eventdata.subjectLogonId` with contemporaneous Event 4624 (Logon) events.
+- Concentrated privilege activity on workstations indicates active lateral movement and local privilege escalation.
+- Severity: **High**
 
 ---
 

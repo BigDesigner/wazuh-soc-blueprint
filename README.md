@@ -60,8 +60,10 @@ It includes:
    SOC-Dashboard-3-Privilege-Escalation.md
    SOC-Dashboard-4-Persistence.md
    SOC-Dashboard-5-Threat-Intel-IOC.md
+   SOC-Dashboard-6-Execution-Process.md
 
 /rules
+   local_rules.xml
    README.md
 
 /runbooks
@@ -77,6 +79,19 @@ It includes:
 
 /mitre
    MITRE-Coverage-Matrix.md
+
+/.specs
+   constitution.md
+   boundary-conditions.md
+   bootstrap.md
+
+/.memory-bank
+   system-coherence.md
+   active-session.json
+   adr/
+   changelog/
+   audits/
+   bugs/
 ```
 
 ---
@@ -87,26 +102,29 @@ It includes:
 |-----------|------------|
 | Dashboard-1 | Authentication & Correlation |
 | Dashboard-2 | Deep RDP Monitoring |
-| Dashboard-3 | Privilege Escalation |
+| Dashboard-3 | Privilege Escalation & Admin Abuse |
 | Dashboard-4 | Persistence & Lateral Movement |
 | Dashboard-5 | Threat Intelligence & IOC |
+| Dashboard-6 | Execution, Process & Injection Monitoring |
 
 ---
 
 ## Key Event IDs Used
 
-| Event ID | Purpose |
-|----------|---------|
+| Event ID / Source | Purpose |
+|-------------------|---------|
 | 4624 | Successful Logon |
 | 4625 | Failed Logon |
 | 4672 | Special Privileges Assigned |
 | 4688 | Process Creation |
-| 4697 | Service Installed |
+| 4697 / 7045 | Service Installed / Service Creation |
 | 4698 | Scheduled Task Created |
-| 4728 | Added to Global Group |
-| 4732 | Added to Local Group |
-| 4756 | Added to Universal Group |
-| 7045 | Service Creation |
+| 4720 | User Account Created |
+| 4728 / 4732 / 4756 | Added to Global / Local / Universal Group |
+| 4104 | PowerShell Script Block Logging |
+| Sysmon 1 | Process Creation (Command line & parent tracking) |
+| Sysmon 8 / 25 | CreateRemoteThread / Process Tampering (Injection) |
+| Sysmon 10 | ProcessAccess (LSASS Credential Dumping) |
 
 ---
 

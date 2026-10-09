@@ -105,17 +105,17 @@ Compare against existing entries in the **Master Panel Registry** (Section 5):
 | **D1-P6** | Failed vs Success | `auth_failed` + `auth_success` | — | Data Table | `targetUserName` + `rule.groups` |
 | **D1-P7** | Network Logons Success | `authentication_success` | 3 | Horizontal Bar | `targetUserName` |
 | **D2-P1** | RDP Success Users | 4624 | 10 | Horizontal Bar | `targetUserName` |
-| **D2-P2** | RDP Failed Source IP | 4625 | — | Horizontal Bar | `ipAddress` |
+| **D2-P2** | RDP Failed Source IP | 4625 | 10 | Horizontal Bar | `ipAddress` |
 | **D2-P3** | Auth Logon Type Dist. | 4624 (LT10) OR 4625 | 10 | Data Table | `ipAddress` → `targetUserName` |
-| **D2-P4** | RDP Internal Timeline | 4624 | 10 | Vertical Bar (Stacked) | `@timestamp (3h)` + `eventID` |
+| **D2-P4** | RDP Internal Timeline | 4624 (LT10) OR 4625 | 10 | Vertical Bar (Stacked) | `@timestamp (3h)` + `eventID` |
 | **D2-P5** | RDP Internal IP→User→Host | 4624 | 10 | Data Table | `ipAddress` → `targetUserName` → `agent.name` |
 | **D2-P6** | RDP VPN IP→User→Host | 4624 | 10 | Data Table | `ipAddress` → `targetUserName` → `agent.name` |
-| **D2-P7** | VPN Multi-Host Count | 4624 | — | Data Table | `ipAddress` (Unique Count `agent.name`) |
+| **D2-P7** | VPN Multi-Host Count | 4624 | 10 | Data Table | `ipAddress` (Unique Count `agent.name`) |
 | **D2-P8** | RDP Public IP Tripwire | 4624 | 10 | Horizontal Bar | `ipAddress` (NOT internal) |
 | **D3-P1** | Special Privileges | 4672 | — | Data Table | `agent.name` → `subjectUserName` |
-| **D3-P2** | Admin Group Changes | 4728 / 4732 / 4756 | — | Data Table | `agent.name` → `TargetUserName` |
+| **D3-P2** | Admin Group Changes | 4728 / 4732 / 4756 | — | Data Table | `agent.name` → `targetUserName` |
 | **D3-P3** | Account Creation | 4720 | — | Data Table | `agent.name` → `targetUserName` |
-| **D3-P4** | Source IP Privilege | 4672 / 4728 / 4732 / 4756 | — | Horizontal Bar | `ipAddress` |
+| **D3-P4** | Host & Subject Breakdown | 4672 / 4728 / 4732 / 4756 | — | Data Table | `agent.name` → `subjectUserName` |
 | **D4-P1** | Scheduled Tasks | 4698 | — | Data Table | `agent.name` → `taskName` |
 | **D4-P2** | Registry Run Keys | `registry` + Run/RunOnce | — | Data Table | `agent.name` → `targetObject` |
 | **D4-P3** | SMB Logon Spike | `authentication_success` | 3 | Line Chart | `@timestamp (5m)` |
@@ -124,10 +124,10 @@ Compare against existing entries in the **Master Panel Registry** (Section 5):
 | **D5-P1** | Threat Intel Matches | `threat_intel` | — | Data Table | `agent.name` → `rule.description` |
 | **D5-P2** | Suspicious Outbound | `firewall` | — | Horizontal Bar | `data.destip` |
 | **D5-P3** | Malware Hash | `malware` | — | Data Table | `agent.name` → `rule.description` |
-| **D5-P4** | DNS Suspicious TLD | `dns` | — | Data Table | `agent.name` → `data.query` |
+| **D5-P4** | DNS Suspicious TLD | `dns` | — | Data Table | `agent.name` → `queryName` |
 | **D5-P5** | MITRE Distribution | `rule.mitre.id:*` | — | Pie | `rule.mitre.id` |
 | **D6-P1** | PowerShell Scripts | 4104 | — | Data Table | `agent.name` → `scriptBlockText` |
-| **D6-P2** | Suspicious Process | 4688 / Sysmon 1 | — | Data Table | `agent.name` → `image` |
+| **D6-P2** | Suspicious Process | 4688 / Sysmon 1 | — | Data Table | `agent.name` → `image / newProcessName` |
 | **D6-P3** | LSASS Access | Sysmon 10 | — | Data Table | `agent.name` → `sourceImage` |
 | **D6-P4** | Process Injection | Sysmon 8 / 25 | — | Data Table | `agent.name` → `targetImage` |
 | **D6-P5** | Long Command Lines | 4688 / Sysmon 1 | — | Data Table | `agent.name` → `commandLine` |
