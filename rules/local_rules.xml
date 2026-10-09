@@ -69,4 +69,54 @@
     </mitre>
   </rule>
 
+  <!--
+  DEFENSE EVASION & LOG CLEARING (T1070.001)
+  Rules to alert on security and event log clearing attempts.
+  -->
+  <rule id="100500" level="12">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^1102$</field>
+    <group>defense_evasion,indicator_removal,log_clearing</group>
+    <description>Defense Evasion: Windows Security Audit log was cleared on $(win.system.computer) by $(win.eventdata.subjectUserName).</description>
+    <mitre>
+      <id>T1070.001</id>
+    </mitre>
+  </rule>
+
+  <rule id="100501" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^104$</field>
+    <group>defense_evasion,indicator_removal,log_clearing</group>
+    <description>Defense Evasion: Windows Event Log file was cleared on $(win.system.computer) (Log Channel: $(win.system.channel)).</description>
+    <mitre>
+      <id>T1070.001</id>
+    </mitre>
+  </rule>
+
+  <!--
+  IMPACT & RANSOMWARE ACTIVITY (T1486 / T1490)
+  Rules to detect volume shadow copy deletion and high-frequency mass file modification.
+  -->
+  <rule id="100600" level="13">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^(4688|1)$</field>
+    <field name="win.eventdata.commandLine">vssadmin.*delete.*shadows|wmic.*shadowcopy.*delete|wbadmin.*delete.*catalog|bcdedit.*recoveryenabled.*no</field>
+    <group>impact,ransomware,defense_evasion</group>
+    <description>Ransomware Behavior: Volume shadow copy deletion or recovery inhibition command executed ($(win.eventdata.commandLine)).</description>
+    <mitre>
+      <id>T1486</id>
+      <id>T1490</id>
+    </mitre>
+  </rule>
+
+  <rule id="100601" level="12" frequency="100" timeframe="60">
+    <if_matched_group>syscheck</if_matched_group>
+    <same_location />
+    <group>impact,ransomware,file_modification</group>
+    <description>Potential Ransomware Activity: High-frequency file modifications (100+ changes in 60s) detected by FIM on $(agent.name).</description>
+    <mitre>
+      <id>T1486</id>
+    </mitre>
+  </rule>
+
 </group>

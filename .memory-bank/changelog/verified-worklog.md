@@ -2,6 +2,13 @@
 
 ## Completed Milestones
 
+### 2026-10-09 — MITRE Detection Gaps Remediation (T1070 & T1486)
+- Implemented Windows Security/System event log clearing detection rules (100500 & 100501) for Event IDs 1102 and 104 (T1070.001).
+- Implemented Ransomware shadow copy deletion detection rule 100600 (T1486 / T1490) and mass FIM file modification rule 100601 (T1486).
+- Updated `mitre/MITRE-Coverage-Matrix.md` and elevated Defense Evasion & Impact tactics to High coverage.
+- Closed GAP-001 and GAP-002 in `.memory-bank/bugs/bug-list.md`.
+- Allocated `100500+` and `100600+` rule ID namespaces in `.specs/boundary-conditions.md`.
+
 ### 2026-10-09 — SOC Dashboards Deep Audit & Comprehensive Remediation
 - Remediated all critical, major, and standard violations identified in audit `7583260`.
 - Fixed D6-P5 illegal `.length > 500` DQL syntax to valid OpenSearch wildcard matching.

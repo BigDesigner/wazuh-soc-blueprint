@@ -16,6 +16,8 @@
   - `100200–100299`: Persistence & Service/Task Creation
   - `100300–100399`: Authentication Abuse & Brute-Force Frequency Thresholds
   - `100400–100499`: Process & Execution Anomalies (Sysmon/LOLBAS)
+  - `100500–100599`: Defense Evasion & Indicator Removal (T1070.001)
+  - `100600–100699`: Impact & Ransomware Invalidation (T1486, T1490)
 
 ### 1.2 Windows Auditing & Sysmon Prerequisites
 - Advanced Audit Policy Configuration (GPO) must be active for Event IDs:

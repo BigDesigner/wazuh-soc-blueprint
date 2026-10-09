@@ -10,9 +10,9 @@
 
 - [x] **TASK-000**: Remediate all defects, DQL errors, and missing SOC notes across Dashboards 1–6 per audit `7583260`.
 - [x] **TASK-001**: Synchronize `README.md` to include Dashboard-6 (Execution & Process Monitoring) in file structure, dashboard overview, and Event ID tables.
-- [ ] **TASK-002**: Address high-priority MITRE gaps in `rules/local_rules.xml`:
-  - `T1486`: Add FIM/vssadmin shadow copy deletion alert.
-  - `T1070`: Add Windows Event log clearing alert (Event ID 1102 / 104).
+- [x] **TASK-002**: Address high-priority MITRE gaps in `rules/local_rules.xml`:
+  - `T1486 / T1490`: Added FIM/vssadmin shadow copy deletion rules (100600 & 100601).
+  - `T1070.001`: Added Windows Event log clearing alerts for Event IDs 1102 & 104 (100500 & 100501).
 - [ ] **TASK-003**: Design `SOC-Dashboard-7-Linux-Endpoint.md` covering SSH brute-force, `sudo` privilege escalation, and auditd system telemetry.
 - [ ] **TASK-004**: Generate OpenSearch NDJSON export bundles in `dashboards/exports/` for automated one-click import.
 - [ ] **TASK-005**: Create GitHub Actions CI workflow (`.github/workflows/validate.yml`) validating XML rules schema and markdown links.
